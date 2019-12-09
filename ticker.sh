@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+printable_colours=256
+
 LANG=C
 LC_NUMERIC=C
 
@@ -24,7 +26,11 @@ if [ -z "$NO_COLOR" ]; then
   : "${COLOR_BOLD:=\e[1;37m}"
   : "${COLOR_GREEN:=\e[32m}"
   : "${COLOR_RED:=\e[31m}"
+  : "${COLOR_DARKGRAY:=\e[90m}"
   : "${COLOR_RESET:=\e[00m}"
+  : "${BG_COLOR_RED:=\e[41m}"
+  : "${BG_COLOR_GREEN:=\e[42m\e[30m}"
+  : "${BG_COLOR_CYAN:=\e[46m\e[30m}"
 fi
 
 symbols=$(IFS=,; echo "${SYMBOLS[*]}")
@@ -51,19 +57,19 @@ for symbol in $(IFS=' '; echo "${SYMBOLS[*]}"); do
   if [ $marketState == "PRE" ] \
     && [ $preMarketChange != "0" ] \
     && [ $preMarketChange != "null" ]; then
-    nonRegularMarketSign='*'
+    nonRegularMarketSign="${BG_COLOR_RED}MARKET CLOSED$COLOR_RESET"
     price=$(query $symbol 'preMarketPrice')
     diff=$preMarketChange
     percent=$(query $symbol 'preMarketChangePercent')
   elif [ $marketState != "REGULAR" ] \
     && [ $postMarketChange != "0" ] \
     && [ $postMarketChange != "null" ]; then
-    nonRegularMarketSign='*'
+    nonRegularMarketSign="${BG_COLOR_CYAN}MARKET OPEN?$COLOR_RESET"
     price=$(query $symbol 'postMarketPrice')
     diff=$postMarketChange
     percent=$(query $symbol 'postMarketChangePercent')
   else
-    nonRegularMarketSign=''
+    nonRegularMarketSign="${BG_COLOR_GREEN}MARKET OPEN$COLOR_RESET"
     price=$(query $symbol 'regularMarketPrice')
     diff=$(query $symbol 'regularMarketChange')
     percent=$(query $symbol 'regularMarketChangePercent')
@@ -79,5 +85,8 @@ for symbol in $(IFS=' '; echo "${SYMBOLS[*]}"); do
 
   printf "%-10s$COLOR_BOLD%8.2f$COLOR_RESET" $symbol $price
   printf "$color%10.2f%12s$COLOR_RESET" $diff $(printf "(%.2f%%)" $percent)
-  printf " %s\n" "$nonRegularMarketSign"
+  printf " %b\n" "$nonRegularMarketSign"
 done
+
+NOW=$(date +"%r")
+printf "${COLOR_DARKGRAY}Last updated: %s$COLOR_RESET" "$NOW"
